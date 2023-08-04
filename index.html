@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lista de Compras</title>
+    <link rel="shortcut icon" href="Graphicloads-100-Flat-Cart.256.png" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .caderno {
+            background-color: #ffffff;
+            border: 2px solid #c0c0c0;
+            padding: 20px;
+            max-width: 90%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555555;
+        }
+        .componente {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .quadrado {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #555555;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .nome-componente {
+            flex-grow: 1;
+            color: #555555;
+        }
+        .concluido .quadrado {
+            background-color: #8FD17B;
+            border-color: #8FD17B;
+        }
+        .concluido .nome-componente {
+            color: #888888;
+            text-decoration: line-through;
+        }
+        input[type="text"] {
+            width: 60%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #8FD17B;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #70a657;
+        }
+        .quantidade {
+            color: #555555;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="caderno">
+        <h1>Lista de Compras</h1>
+        <hr>
+        <div class="input-group">
+            <input type="text" id="componente" placeholder="Digite um componente" onkeypress="adicionarComEnter(event)">
+            <button onclick="adicionarComponente()">Adicionar</button>
+        </div>
+        <button onclick="salvarLista()">Salvar Lista</button>
+        <button onclick="apagarLista()" id="btnApagarLista" disabled>Apagar Lista</button>
+        <div id="listaComponentes"></div>
+    </div>
+
+    <script>
+        // Carregar lista do Armazenamento Local, se existir
+        window.onload = function () {
+            var listaSalva = localStorage.getItem('lista');
+            if (listaSalva) {
+                document.getElementById("listaComponentes").innerHTML = listaSalva;
+            }
+            // Marcar os componentes como concluídos, se necessário
+            marcarComponentesConcluidos();
+
+            // Habilitar ou desabilitar o botão "Limpar Lista" conforme a conexão
+            var btnApagarLista = document.getElementById("btnApagarLista");
+            btnApagarLista.disabled = !navigator.onLine;
+        };
+
+        function marcarComponentesConcluidos() {
+            var componentes = document.querySelectorAll(".componente");
+            for (var i = 0; i < componentes.length; i++) {
+                var quadrado = componentes[i].querySelector(".quadrado");
+                if (componentes[i].classList.contains("concluido")) {
+                    quadrado.classList.add("concluido");
+                } else {
+                    quadrado.classList.remove("concluido");
+                }
+                calcularQuantidadeDaPalavra(componentes[i]);
+            }
+        }
+
+        function adicionarComponente() {
+            var componenteInput = document.getElementById("componente");
+            var componente = componenteInput.value.trim();
+
+            if (componente !== "") {
+                var lista = document.getElementById("listaComponentes");
+                var novoItem = document.createElement("div");
+                novoItem.className = "componente";
+
+                var quadrado = document.createElement("div");
+                quadrado.className = "quadrado";
+                quadrado.onclick = function () {
+                    novoItem.classList.toggle("concluido");
+                    this.classList.toggle("concluido");
+                };
+                novoItem.appendChild(quadrado);
+
+                var texto = document.createElement("span");
+                texto.className = "nome-componente";
+                texto.textContent = componente;
+                novoItem.appendChild(texto);
+
+                var quantidadeSpan = document.createElement("span");
+                quantidadeSpan.className = "quantidade";
+                novoItem.appendChild(quantidadeSpan);
+
+                lista.appendChild(novoItem);
+
+                componenteInput.value = ""; // Limpar o campo de input
+                componenteInput.focus(); // Dar foco novamente ao campo de input
+
+                calcularQuantidadeDaPalavra(novoItem); // Calcular e exibir a quantidade
+
+                // Habilitar o botão "Limpar Lista" ao adicionar um componente
+                var btnApagarLista = document.getElementById("btnApagarLista");
+                btnApagarLista.disabled = false;
+            }
+        }
+
+        function adicionarComEnter(event) {
+            if (event.key === "Enter") {
+                adicionarComponente();
+            }
+        }
+
+        function calcularQuantidadeDaPalavra(componente) {
+            var texto = componente.querySelector(".nome-componente").textContent;
+            var numeros = texto.match(/\d+$/);
+            var quantidadeSpan = componente.querySelector(".quantidade");
+            if (numeros) {
+                quantidadeSpan.textContent = " (" + numeros[0] + ")";
+                componente.querySelector(".nome-componente").textContent = texto.replace(numeros[0], '').trim();
+            } else {
+                quantidadeSpan.textContent = "";
+            }
+        }
+
+        function salvarLista() {
+            var lista = document.getElementById("listaComponentes").innerHTML;
+            localStorage.setItem('lista', lista);
+
+            // Marcar os componentes como concluídos novamente
+            marcarComponentesConcluidos();
+        }
+
+        function apagarLista() {
+            document.getElementById("listaComponentes").innerHTML = "";
+            localStorage.removeItem('lista');
+
+            // Desabilitar o botão "Limpar Lista" ao apagar a lista
+            var btnApagarLista = document.getElementById("btnApagarLista");
+            btnApagarLista.disabled = true;
+        }
+    </script>
+</body>
+</html>
